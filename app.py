@@ -43,3 +43,9 @@ def max_len(col):
 # Appliquez cet aggrégat à la colonne rubrique de la table Article et affichez le résultat.
 con.create_aggregate("max_len", 1, max_len)
 
+# Créez une fonction Python qui calcule la taille du nom de journaliste le plus long en utilisant en appelant votre aggrégat.
+def max_len_journaliste():
+    res = cur.execute("SELECT max_len(nom) FROM Journaliste")
+    return res.fetchone()[0]
+
+
