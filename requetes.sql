@@ -3,6 +3,8 @@ PRAGMA foreign_keys = ON;
 DROP TABLE Travail;
 DROP TABLE Journaliste;
 DROP TABLE Article;
+DROP TABLE nb_articles_par_rubrique;
+DROP VIEW Articles_tech;
 
 
 
@@ -126,12 +128,12 @@ GROUP BY a.titre;
 
 SELECT "-----------------------";
 
--- Afficher les articles qui n'ont qu'un seul auteur
-SELECT a.titre
-FROM Travail t, Article a
-WHERE t.id_article = a.id
-GROUP BY a.id;
-HAVING count(t.id_journaliste) < 2;
+-- -- Afficher les articles qui n'ont qu'un seul auteur
+-- SELECT a.titre
+-- FROM Travail t, Article a
+-- WHERE t.id_article = a.id
+-- GROUP BY a.id;
+-- HAVING count(t.id_journaliste) < 2;
 
 -- Afficher pour chaque journaliste le nombre d'articles qu'il a écrit seul
 SELECT j.nom, j.prenom, count(t.id_article) as nb_articles
@@ -156,3 +158,60 @@ SELECT j.nom, j.prenom, count(t.id_article) as nb_articles
 FROM Journaliste j, Travail t
 WHERE j.id = t.id_journaliste 
 GROUP BY j.id;
+
+--Créez une vue articles_tech affichant uniquement les articles de la catégorie tech.
+CREATE VIEW articles_tech AS
+SELECT a.titre, a.rubrique
+FROM Article a
+WHERE a.rubrique = 'tech';
+
+
+-- Inserer un article dans la table Article
+INSERT INTO Article (ID, titre, rubrique)
+VALUES (10101, 'Paul', 'tech');
+
+-- Effacer un article dans la table Article
+DELETE FROM Article
+WHERE id = 10101;
+
+-- Affichez les id des journalistes ayant écrits des articles de la catégorie tech de sans utiliser la vue précédente, avec une sous-requête
+SELECT t.id_journaliste
+FROM Travail t, Article a
+WHERE t.id_article = a.id AND a.rubrique = 'tech';
+
+-- en utilisant la vue précédente, avec une sous-requête
+-- en utilisant la vue précédente, avec une jointure
+
+-- Créez une table nb_articles_par_rubrique qui contient le nombre d’articles par rubrique.
+CREATE TABLE nb_articles_par_rubrique AS
+SELECT a.rubrique, count(a.id) as nb_articles
+FROM Article a
+GROUP BY a.rubrique;
+
+-- Ajoutez les triggers nécessaires pour mettre à jour cette table lors de l’ajout, suppression et mise à jour d’un article.
+CREATE TRIGGER insert_nb_articles_par_rubrique AFTER INSERT ON Article
+BEGIN
+    UPDATE nb_articles_par_rubrique
+    SET nb_articles = nb_articles + 1
+    WHERE rubrique = new.rubrique;
+END;
+
+CREATE TRIGGER delete_nb_articles_par_rubrique AFTER DELETE ON Article
+BEGIN
+    UPDATE nb_articles_par_rubrique
+    SET nb_articles = nb_articles - 1
+    WHERE rubrique = old.rubrique;
+END;
+
+CREATE TRIGGER update_nb_articles_par_rubrique AFTER UPDATE ON Article
+BEGIN
+    UPDATE nb_articles_par_rubrique
+    SET nb_articles = nb_articles - 1
+    WHERE rubrique = old.rubrique;
+    UPDATE nb_articles_par_rubrique
+    SET nb_articles = nb_articles + 1
+    WHERE rubrique = new.rubrique;
+END;
+
+
+
