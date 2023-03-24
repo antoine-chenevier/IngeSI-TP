@@ -19,6 +19,8 @@ con.commit()
 
 # Ajoutez à votre base de donnée une fonction retournant la chaine de caractère "Prénom Nom" à partir du prénom et du nom d’un journaliste. Appliquez cette fonction à tous les journalistes et affichez le résultat
 con.create_function("print", 2, lambda x, y: x + " " + y)
+
+
 for row in con.execute("SELECT print(prenom, nom) FROM Journaliste"):
     print(row)
 
@@ -31,21 +33,33 @@ def get_journaliste(id):
 print(get_journaliste(101))
 
 # Créez un aggrégat qui calcule la taille de la chaine la plus longue pour une colonne de chaines de caractères.
-def max_len(col):
-    def step(state, value):
-        return max(state, len(value))
-
-    def finalize(state):
-        return state
-
-    return step, finalize
+class MaxLen:
+    def __init__(self):
+        self.size = 0 
+    def step(self, value):
+        if value is not None:
+            self.size = max(self.size, len(value))
+    def finalize(self):
+        return self.size
 
 # Appliquez cet aggrégat à la colonne rubrique de la table Article et affichez le résultat.
-con.create_aggregate("max_len", 1, max_len)
+con.create_aggregate("max_len", 1, MaxLen)
+
+res = cur.execute("SELECT max_len(rubrique) FROM Article")
+print(res.fetchone()[0])
 
 # Créez une fonction Python qui calcule la taille du nom de journaliste le plus long en utilisant en appelant votre aggrégat.
-def max_len_journaliste():
+def max_len_name():
     res = cur.execute("SELECT max_len(nom) FROM Journaliste")
     return res.fetchone()[0]
+
+# Fonction qui calcule la taille de la chaine de caractère "Prénom Nom" la plus longue.
+def max_len_fullName():
+    res = cur.execute("SELECT max_len(print(prenom, nom)) FROM Journaliste")
+    return res.fetchone()[0]
+
+# Affichez le résultat des fonctions.
+print(max_len_name())
+print(max_len_fullName())
 
 
